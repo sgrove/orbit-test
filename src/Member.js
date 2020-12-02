@@ -30,6 +30,7 @@ export default function Member(props) {
         discourseHostname
         linkedin
         devto
+        avatarUrl
       }
     `,
     props.member
