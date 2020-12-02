@@ -12,8 +12,6 @@ import {
 import graphql from "babel-plugin-relay/macro";
 import { createPaginationContainer } from "react-relay";
 
-import PageInfo from "./PageInfo";
-
 export function PaginatedWorkspacesActivities(props) {
   const { relay, workspacesForPaginatedActivities } = props;
   const [isLoading, setIsLoading] = React.useState(false);
@@ -134,7 +132,10 @@ const WORKSPACES_QUERY = graphql`
     orbit(auths: { orbit: { apiKey: $apiKey } }) {
       workspaces(first: 1) {
         pageInfo {
-          ...PageInfo_fragment
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
         }
         edges {
           node {
@@ -146,7 +147,10 @@ const WORKSPACES_QUERY = graphql`
             id
             members(first: 2) {
               pageInfo {
-                ...PageInfo_fragment
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
               }
               edges {
                 node {
@@ -177,7 +181,10 @@ const WORKSPACES_QUERY = graphql`
             }
             posts(first: 1) {
               pageInfo {
-                ...PageInfo_fragment
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
               }
               edges {
                 node {
@@ -245,19 +252,6 @@ export function WorkspacesQuery(props) {
     </div>
   ) : null;
 
-  const pageInfoUses = <PageInfo info={data?.orbit?.workspaces?.pageInfo} />;
-  const pageInfoUses2 = data?.orbit?.workspaces?.edges?.map((item, idx) => (
-    <PageInfo
-      key={item?.node?.members?.pageInfo?.id || idx}
-      info={item?.node?.members?.pageInfo}
-    />
-  ));
-  const pageInfoUses3 = data?.orbit?.workspaces?.edges?.map((item, idx) => (
-    <PageInfo
-      key={item?.node?.posts?.pageInfo?.id || idx}
-      info={item?.node?.posts?.pageInfo}
-    />
-  ));
   const paginatedWorkspacesActivitiesUses = data?.orbit?.workspaces?.edges?.map(
     (item, idx) => (
       <PaginatedWorkspacesActivitiesContainer
@@ -270,12 +264,6 @@ export function WorkspacesQuery(props) {
   return (
     <div>
       {dataEl}
-      <h4>
-        PageInfoUses <LocationNote />
-      </h4>
-      {pageInfoUses}
-      {pageInfoUses2}
-      {pageInfoUses3}
       <h4>
         PaginatedWorkspacesActivitiesUses <LocationNote />
       </h4>
