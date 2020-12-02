@@ -11,10 +11,20 @@ import {
 } from "./utils";
 import graphql from "babel-plugin-relay/macro";
 import { createPaginationContainer } from "react-relay";
+import Activity from "./Activity";
+import Member from "./Member";
+import Post from "./Post";
+import Activity from "./Activity";
 
 export function PaginatedWorkspacesActivities(props) {
   const { relay, workspacesForPaginatedActivities } = props;
   const [isLoading, setIsLoading] = React.useState(false);
+
+  const activityUses = workspacesForPaginatedActivities?.activities?.edges?.map(
+    (item, idx) => (
+      <Activity key={item?.activity?.id || idx} activity={item?.activity} />
+    )
+  );
 
   const loadMoreCount = 2;
 
@@ -24,6 +34,10 @@ export function PaginatedWorkspacesActivities(props) {
         <pre>
           {stringifyRelayData(workspacesForPaginatedActivities?.activities)}
         </pre>
+        <h4>
+          ActivityUses <LocationNote />
+        </h4>
+        {activityUses}
       </div>
       <button
         className={isLoading ? "loading" : null}
@@ -63,33 +77,9 @@ export const PaginatedWorkspacesActivitiesContainer = createPaginationContainer(
             key: "Workspaces_workspacesForPaginatedActivities_activities"
           ) {
           edges {
-            node {
+            activity: node {
               __typename
-              id
-              key
-              action
-              occurredAt
-              updatedAt
-              ... on OrbitPullRequestActivity {
-                gitHubTitle
-                gitHubMerged
-                gitHubMergedAt
-              }
-              ... on OrbitIssueActivity {
-                gitHubTitle
-              }
-              ... on OrbitIssueCommentActivity {
-                gitHubTitle
-                gitHubHtmlUrl
-                gitHubNumber
-                gitHubCreatedAt
-                gitHubId
-                gitHubBody
-                gitHubTitle
-              }
-              ... on OrbitCustomActivity {
-                raw
-              }
+              ...Activity_fragment
             }
           }
         }
@@ -138,7 +128,7 @@ const WORKSPACES_QUERY = graphql`
           endCursor
         }
         edges {
-          node {
+          workspace: node {
             name
             oneGraphId
             slug
@@ -153,29 +143,8 @@ const WORKSPACES_QUERY = graphql`
                 endCursor
               }
               edges {
-                node {
-                  id
-                  oneGraphId
-                  bio
-                  birthday
-                  company
-                  location
-                  name
-                  pronouns
-                  shippingAddress
-                  slug
-                  tagsToAdd
-                  tagList
-                  tshirt
-                  teammate
-                  url
-                  github
-                  twitter
-                  email
-                  discourse
-                  discourseHostname
-                  linkedin
-                  devto
+                member: node {
+                  ...Member_fragment
                 }
               }
             }
@@ -187,45 +156,13 @@ const WORKSPACES_QUERY = graphql`
                 endCursor
               }
               edges {
-                node {
-                  createdAt
-                  description
-                  image
-                  publishedAt
-                  title
-                  updatedAt
-                  url
-                  id
+                post: node {
+                  ...Post_fragment
                 }
               }
             }
             activity(id: "4050778") {
-              __typename
-              id
-              key
-              action
-              occurredAt
-              updatedAt
-              ... on OrbitPullRequestActivity {
-                gitHubTitle
-                gitHubMerged
-                gitHubMergedAt
-              }
-              ... on OrbitIssueActivity {
-                gitHubTitle
-              }
-              ... on OrbitIssueCommentActivity {
-                gitHubTitle
-                gitHubHtmlUrl
-                gitHubNumber
-                gitHubCreatedAt
-                gitHubId
-                gitHubBody
-                gitHubTitle
-              }
-              ... on OrbitCustomActivity {
-                raw
-              }
+              ...Activity_fragment
             }
             ...Workspaces_workspacesForPaginatedActivities @arguments
           }
@@ -252,11 +189,27 @@ export function WorkspacesQuery(props) {
     </div>
   ) : null;
 
+  const memberUses = data?.orbit?.workspaces?.edges?.map((item, idx) =>
+    item?.workspace?.members?.edges?.map((item, idx) => (
+      <Member key={item?.member?.id || idx} member={item?.member} />
+    ))
+  );
+  const postUses = data?.orbit?.workspaces?.edges?.map((item, idx) =>
+    item?.workspace?.posts?.edges?.map((item, idx) => (
+      <Post key={item?.post?.id || idx} post={item?.post} />
+    ))
+  );
+  const activityUses = data?.orbit?.workspaces?.edges?.map((item, idx) => (
+    <Activity
+      key={item?.workspace?.activity?.id || idx}
+      activity={item?.workspace?.activity}
+    />
+  ));
   const paginatedWorkspacesActivitiesUses = data?.orbit?.workspaces?.edges?.map(
     (item, idx) => (
       <PaginatedWorkspacesActivitiesContainer
-        key={item?.node?.id || idx}
-        workspacesForPaginatedActivities={item?.node}
+        key={item?.workspace?.id || idx}
+        workspacesForPaginatedActivities={item?.workspace}
       />
     )
   );
@@ -264,6 +217,18 @@ export function WorkspacesQuery(props) {
   return (
     <div>
       {dataEl}
+      <h4>
+        MemberUses <LocationNote />
+      </h4>
+      {memberUses}
+      <h4>
+        PostUses <LocationNote />
+      </h4>
+      {postUses}
+      <h4>
+        ActivityUses <LocationNote />
+      </h4>
+      {activityUses}
       <h4>
         PaginatedWorkspacesActivitiesUses <LocationNote />
       </h4>
