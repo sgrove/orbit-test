@@ -405,7 +405,6 @@ export const PaginatedWorkspacesActivitiesContainer = createPaginationContainer(
           ) {
           edges {
             activity: node {
-              __typename
               ...Activity_fragment
             }
           }

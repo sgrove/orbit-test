@@ -12,7 +12,6 @@ export default function Activity(props) {
   const data = useFragment(
     graphql`
       fragment Activity_fragment on OrbitActivity {
-        __typename
         id
         key
         action

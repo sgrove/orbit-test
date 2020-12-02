@@ -15,7 +15,6 @@ const ACTIVITY_TYPES_QUERY = graphql`
   query ActivityTypes_ActivityTypesQuery($apiKey: String!) {
     orbit(auths: { orbit: { apiKey: $apiKey } }) {
       activityTypes {
-        __typename
         id
         key
         name
