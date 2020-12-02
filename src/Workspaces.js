@@ -3,7 +3,12 @@ import React, { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLazyLoadQuery } from "react-relay/hooks";
 import { auth } from "./Config";
-import { ErrorFallback, LocationNote, updateFormVariables } from "./utils";
+import {
+  ErrorFallback,
+  stringifyRelayData,
+  LocationNote,
+  updateFormVariables,
+} from "./utils";
 import graphql from "babel-plugin-relay/macro";
 import { createPaginationContainer } from "react-relay";
 import Activity from "./Activity";
@@ -459,7 +464,15 @@ export function WorkspacesQuery(props) {
     fetchKey: auth.accessToken()?.accessToken,
   });
 
-  console.log("WORKSPACES_QUERY data", data);
+  const dataEl = data ? (
+    <div className="data-box">
+      <h3>
+        Data for Workspaces <LocationNote />
+      </h3>
+      <pre>{stringifyRelayData(data)}</pre>
+    </div>
+  ) : null;
+
   const paginatedOrbitWorkspacesUses = (
     <PaginatedOrbitWorkspacesContainer
       orbitForPaginatedWorkspaces={data?.orbit}
@@ -468,6 +481,7 @@ export function WorkspacesQuery(props) {
 
   return (
     <div>
+      {dataEl}
       <h4>
         PaginatedOrbitWorkspacesUses <LocationNote />
       </h4>
