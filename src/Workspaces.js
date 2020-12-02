@@ -3,18 +3,345 @@ import React, { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLazyLoadQuery } from "react-relay/hooks";
 import { auth } from "./Config";
-import {
-  ErrorFallback,
-  stringifyRelayData,
-  LocationNote,
-  updateFormVariables,
-} from "./utils";
+import { ErrorFallback, LocationNote, updateFormVariables } from "./utils";
 import graphql from "babel-plugin-relay/macro";
 import { createPaginationContainer } from "react-relay";
 import Activity from "./Activity";
 import Member from "./Member";
 import Post from "./Post";
-import Activity from "./Activity";
+
+export function PaginatedOrbitWorkspaces(props) {
+  const { relay, orbitForPaginatedWorkspaces } = props;
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const workspacesForPaginatedMembersUses = orbitForPaginatedWorkspaces?.workspaces?.edges?.map(
+    (item, idx) => (
+      <PaginatedWorkspacesMembersContainer
+        key={item?.workspace?.id || idx}
+        workspacesForPaginatedMembers={item?.workspace}
+      />
+    )
+  );
+  const workspacesForPaginatedPostsUses = orbitForPaginatedWorkspaces?.workspaces?.edges?.map(
+    (item, idx) => (
+      <PaginatedWorkspacesPostsContainer
+        key={item?.workspace?.id || idx}
+        workspacesForPaginatedPosts={item?.workspace}
+      />
+    )
+  );
+  const activityUses = orbitForPaginatedWorkspaces?.workspaces?.edges?.map(
+    (item, idx) => (
+      <Activity
+        key={item?.workspace?.activity?.id || idx}
+        activity={item?.workspace?.activity}
+      />
+    )
+  );
+  const workspacesForPaginatedActivitiesUses = orbitForPaginatedWorkspaces?.workspaces?.edges?.map(
+    (item, idx) => (
+      <PaginatedWorkspacesActivitiesContainer
+        key={item?.workspace?.id || idx}
+        workspacesForPaginatedActivities={item?.workspace}
+      />
+    )
+  );
+
+  const loadMoreCount = 2;
+
+  return (
+    <div>
+      <div className="data-box">
+        <pre>{stringifyRelayData(orbitForPaginatedWorkspaces?.workspaces)}</pre>
+        <h4>
+          WorkspacesForPaginatedMembersUses <LocationNote />
+        </h4>
+        {workspacesForPaginatedMembersUses}
+        <h4>
+          WorkspacesForPaginatedPostsUses <LocationNote />
+        </h4>
+        {workspacesForPaginatedPostsUses}
+        <h4>
+          ActivityUses <LocationNote />
+        </h4>
+        {activityUses}
+        <h4>
+          WorkspacesForPaginatedActivitiesUses <LocationNote />
+        </h4>
+        {workspacesForPaginatedActivitiesUses}
+      </div>
+      <button
+        className={isLoading ? "loading" : null}
+        disabled={!relay.hasMore()}
+        onClick={() => {
+          if (!relay.isLoading()) {
+            setIsLoading(true);
+            relay.loadMore(loadMoreCount, (results) => {
+              console.log("Loaded more workspaces: ", results);
+              setIsLoading(false);
+            });
+          }
+        }}
+      >
+        {isLoading
+          ? "Loading more workspaces..."
+          : relay.hasMore()
+          ? `Fetch ${loadMoreCount} more workspaces`
+          : "All workspaces have been fetched"}
+      </button>
+    </div>
+  );
+}
+
+export const PaginatedOrbitWorkspacesContainer = createPaginationContainer(
+  PaginatedOrbitWorkspaces,
+  {
+    orbitForPaginatedWorkspaces: graphql`
+      fragment Workspaces_orbitForPaginatedWorkspaces on OrbitQuery
+      @argumentDefinitions(
+        count: { type: "Int", defaultValue: 10 }
+        cursor: { type: "String" }
+      ) {
+        workspaces(first: $count, after: $cursor)
+          @connection(
+            key: "Workspaces_orbitForPaginatedWorkspaces_workspaces"
+          ) {
+          edges {
+            workspace: node {
+              name
+              oneGraphId
+              slug
+              createdAt
+              updatedAt
+              id
+              ...Workspaces_workspacesForPaginatedMembers
+                @arguments(count: $count, cursor: $cursor)
+              ...Workspaces_workspacesForPaginatedPosts
+                @arguments(count: $count, cursor: $cursor)
+              activity(id: "4050778") {
+                ...Activity_fragment
+              }
+              ...Workspaces_workspacesForPaginatedActivities
+                @arguments(count: $count, cursor: $cursor)
+            }
+          }
+        }
+      }
+    `,
+  },
+  {
+    direction: "forward",
+    getConnectionFromProps(props) {
+      return props?.orbitForPaginatedWorkspaces?.workspaces;
+    },
+    getVariables(props, pagination, fragmentVariables) {
+      const { count, cursor } = pagination;
+      return { ...fragmentVariables, count: count, cursor: cursor };
+    },
+    query: graphql`
+      query Workspaces_PaginatedOrbitWorkspacesContainerQuery(
+        $apiKey: String!
+        $count: Int = 10
+        $cursor: String
+      ) {
+        orbit(auths: { orbit: { apiKey: $apiKey } }) {
+          ...Workspaces_orbitForPaginatedWorkspaces
+            @arguments(count: $count, cursor: $cursor)
+        }
+      }
+    `,
+  }
+);
+
+export function PaginatedWorkspacesMembers(props) {
+  const { relay, workspacesForPaginatedMembers } = props;
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const memberUses = workspacesForPaginatedMembers?.members?.edges?.map(
+    (item, idx) => (
+      <Member key={item?.member?.id || idx} member={item?.member} />
+    )
+  );
+
+  const loadMoreCount = 2;
+
+  return (
+    <div>
+      <div className="data-box">
+        <pre>{stringifyRelayData(workspacesForPaginatedMembers?.members)}</pre>
+        <h4>
+          MemberUses <LocationNote />
+        </h4>
+        {memberUses}
+      </div>
+      <button
+        className={isLoading ? "loading" : null}
+        disabled={!relay.hasMore()}
+        onClick={() => {
+          if (!relay.isLoading()) {
+            setIsLoading(true);
+            relay.loadMore(loadMoreCount, (results) => {
+              console.log("Loaded more members: ", results);
+              setIsLoading(false);
+            });
+          }
+        }}
+      >
+        {isLoading
+          ? "Loading more members..."
+          : relay.hasMore()
+          ? `Fetch ${loadMoreCount} more members`
+          : "All members have been fetched"}
+      </button>
+    </div>
+  );
+}
+
+export const PaginatedWorkspacesMembersContainer = createPaginationContainer(
+  PaginatedWorkspacesMembers,
+  {
+    workspacesForPaginatedMembers: graphql`
+      fragment Workspaces_workspacesForPaginatedMembers on OrbitWorkspace
+      @argumentDefinitions(
+        count: { type: "Int", defaultValue: 10 }
+        cursor: { type: "String" }
+      ) {
+        id
+        members(first: $count, after: $cursor)
+          @connection(key: "Workspaces_workspacesForPaginatedMembers_members") {
+          edges {
+            member: node {
+              ...Member_fragment
+            }
+          }
+        }
+        oneGraphId
+      }
+    `,
+  },
+  {
+    direction: "forward",
+    getConnectionFromProps(props) {
+      return props?.workspacesForPaginatedMembers?.members;
+    },
+    getVariables(props, pagination, fragmentVariables) {
+      const { count, cursor } = pagination;
+      return {
+        ...fragmentVariables,
+        count: count,
+        cursor: cursor,
+        oneGraphId: props?.workspacesForPaginatedMembers?.oneGraphId,
+      };
+    },
+    query: graphql`
+      query Workspaces_PaginatedWorkspacesMembersContainerQuery(
+        $oneGraphId: ID!
+        $count: Int = 10
+        $cursor: String
+      ) {
+        oneGraphNode(oneGraphId: $oneGraphId) {
+          oneGraphId
+          ...Workspaces_workspacesForPaginatedMembers
+            @arguments(count: $count, cursor: $cursor)
+        }
+      }
+    `,
+  }
+);
+
+export function PaginatedWorkspacesPosts(props) {
+  const { relay, workspacesForPaginatedPosts } = props;
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const postUses = workspacesForPaginatedPosts?.posts?.edges?.map(
+    (item, idx) => <Post key={item?.post?.id || idx} post={item?.post} />
+  );
+
+  const loadMoreCount = 2;
+
+  return (
+    <div>
+      <div className="data-box">
+        <pre>{stringifyRelayData(workspacesForPaginatedPosts?.posts)}</pre>
+        <h4>
+          PostUses <LocationNote />
+        </h4>
+        {postUses}
+      </div>
+      <button
+        className={isLoading ? "loading" : null}
+        disabled={!relay.hasMore()}
+        onClick={() => {
+          if (!relay.isLoading()) {
+            setIsLoading(true);
+            relay.loadMore(loadMoreCount, (results) => {
+              console.log("Loaded more posts: ", results);
+              setIsLoading(false);
+            });
+          }
+        }}
+      >
+        {isLoading
+          ? "Loading more posts..."
+          : relay.hasMore()
+          ? `Fetch ${loadMoreCount} more posts`
+          : "All posts have been fetched"}
+      </button>
+    </div>
+  );
+}
+
+export const PaginatedWorkspacesPostsContainer = createPaginationContainer(
+  PaginatedWorkspacesPosts,
+  {
+    workspacesForPaginatedPosts: graphql`
+      fragment Workspaces_workspacesForPaginatedPosts on OrbitWorkspace
+      @argumentDefinitions(
+        count: { type: "Int", defaultValue: 10 }
+        cursor: { type: "String" }
+      ) {
+        id
+        posts(first: $count, after: $cursor)
+          @connection(key: "Workspaces_workspacesForPaginatedPosts_posts") {
+          edges {
+            post: node {
+              ...Post_fragment
+            }
+          }
+        }
+        oneGraphId
+      }
+    `,
+  },
+  {
+    direction: "forward",
+    getConnectionFromProps(props) {
+      return props?.workspacesForPaginatedPosts?.posts;
+    },
+    getVariables(props, pagination, fragmentVariables) {
+      const { count, cursor } = pagination;
+      return {
+        ...fragmentVariables,
+        count: count,
+        cursor: cursor,
+        oneGraphId: props?.workspacesForPaginatedPosts?.oneGraphId,
+      };
+    },
+    query: graphql`
+      query Workspaces_PaginatedWorkspacesPostsContainerQuery(
+        $oneGraphId: ID!
+        $count: Int = 10
+        $cursor: String
+      ) {
+        oneGraphNode(oneGraphId: $oneGraphId) {
+          oneGraphId
+          ...Workspaces_workspacesForPaginatedPosts
+            @arguments(count: $count, cursor: $cursor)
+        }
+      }
+    `,
+  }
+);
 
 export function PaginatedWorkspacesActivities(props) {
   const { relay, workspacesForPaginatedActivities } = props;
@@ -120,54 +447,7 @@ export const PaginatedWorkspacesActivitiesContainer = createPaginationContainer(
 const WORKSPACES_QUERY = graphql`
   query WorkspacesQuery($apiKey: String!) {
     orbit(auths: { orbit: { apiKey: $apiKey } }) {
-      workspaces(first: 1) {
-        pageInfo {
-          hasNextPage
-          hasPreviousPage
-          startCursor
-          endCursor
-        }
-        edges {
-          workspace: node {
-            name
-            oneGraphId
-            slug
-            createdAt
-            updatedAt
-            id
-            members(first: 2) {
-              pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-              }
-              edges {
-                member: node {
-                  ...Member_fragment
-                }
-              }
-            }
-            posts(first: 1) {
-              pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-              }
-              edges {
-                post: node {
-                  ...Post_fragment
-                }
-              }
-            }
-            activity(id: "4050778") {
-              ...Activity_fragment
-            }
-            ...Workspaces_workspacesForPaginatedActivities @arguments
-          }
-        }
-      }
+      ...Workspaces_orbitForPaginatedWorkspaces @arguments
     }
   }
 `;
@@ -180,59 +460,19 @@ export function WorkspacesQuery(props) {
     fetchKey: auth.accessToken()?.accessToken,
   });
 
-  const dataEl = data ? (
-    <div className="data-box">
-      <h3>
-        Data for Workspaces <LocationNote />
-      </h3>
-      <pre>{stringifyRelayData(data)}</pre>
-    </div>
-  ) : null;
-
-  const memberUses = data?.orbit?.workspaces?.edges?.map((item, idx) =>
-    item?.workspace?.members?.edges?.map((item, idx) => (
-      <Member key={item?.member?.id || idx} member={item?.member} />
-    ))
-  );
-  const postUses = data?.orbit?.workspaces?.edges?.map((item, idx) =>
-    item?.workspace?.posts?.edges?.map((item, idx) => (
-      <Post key={item?.post?.id || idx} post={item?.post} />
-    ))
-  );
-  const activityUses = data?.orbit?.workspaces?.edges?.map((item, idx) => (
-    <Activity
-      key={item?.workspace?.activity?.id || idx}
-      activity={item?.workspace?.activity}
+  console.log("WORKSPACES_QUERY data", data);
+  const paginatedOrbitWorkspacesUses = (
+    <PaginatedOrbitWorkspacesContainer
+      orbitForPaginatedWorkspaces={data?.orbit}
     />
-  ));
-  const paginatedWorkspacesActivitiesUses = data?.orbit?.workspaces?.edges?.map(
-    (item, idx) => (
-      <PaginatedWorkspacesActivitiesContainer
-        key={item?.workspace?.id || idx}
-        workspacesForPaginatedActivities={item?.workspace}
-      />
-    )
   );
 
   return (
     <div>
-      {dataEl}
       <h4>
-        MemberUses <LocationNote />
+        PaginatedOrbitWorkspacesUses <LocationNote />
       </h4>
-      {memberUses}
-      <h4>
-        PostUses <LocationNote />
-      </h4>
-      {postUses}
-      <h4>
-        ActivityUses <LocationNote />
-      </h4>
-      {activityUses}
-      <h4>
-        PaginatedWorkspacesActivitiesUses <LocationNote />
-      </h4>
-      {paginatedWorkspacesActivitiesUses}
+      {paginatedOrbitWorkspacesUses}
     </div>
   );
 }
